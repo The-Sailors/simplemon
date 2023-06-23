@@ -27,6 +27,19 @@ func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "User email, type, url and method are required", http.StatusBadRequest)
 		return
 	}
+	createdMonitor, err := app.models.Monitor.Create(r.Context(), monitor, app.logger)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	monitorJson, err := json.Marshal(createdMonitor)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(monitorJson)
 
 }
 

@@ -6,7 +6,7 @@ type Models struct {
 	Monitor MonitorModel
 }
 
-func newModels(db *sql.DB) Models {
+func NewModels(db *sql.DB) Models {
 	return Models{
 		Monitor: MonitorModel{DB: db},
 	}
