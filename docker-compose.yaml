@@ -1,22 +1,21 @@
 version: '3.9'
 
 services:
-  api:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-      args:
-        - GO_VERSION=${GO_VERSION}
-    volumes:
-      - .:/app/src
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: ./Dockerfile
+  #     args:
+  #       - GO_VERSION=${GO_VERSION}
+  #   volumes:
+  #     - .:/app/src
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
   postgres:
     image: postgres:14
-    hostname: postgres
     environment:
       POSTGRES_PASSWORD: "postgres"
       POSTGRES_USER: "postgres"
@@ -24,18 +23,20 @@ services:
     volumes:
       - db:/var/lib/postgresql/data
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     healthcheck:
       test: pg_isready -U postgres
       interval: 2s
       timeout: 3s
-      retries: 3
+      retries: 40
 
   pgadmin:
     image: dpage/pgadmin4:latest
     ports:
       - "5050:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@birdie.ai
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
     depends_on:
       postgres:

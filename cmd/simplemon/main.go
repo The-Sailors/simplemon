@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/The-Sailors/simplemon/internal/data"
+	_ "github.com/lib/pq"
 )
 
 type Config struct {
@@ -69,9 +70,10 @@ func main() {
 			maxIdleConns int
 			maxIdleTime  string
 		}{
-			postgresURL:  getEnvWithDefault("POSTGRES_URL", "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"),
+			postgresURL:  getEnvWithDefault("POSTGRES_URL", "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"),
 			maxOpenConns: 5,
 			maxIdleConns: 5,
+			maxIdleTime:  "15m",
 		},
 		env:  getEnvWithDefault("ENV", "development"),
 		port: getEnvWithDefault("PORT", "8000"),

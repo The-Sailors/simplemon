@@ -1,3 +1,5 @@
+// This file contains the Monitor struct and the MonitorRepository interface, that are used to
+// define the struct that will be managed and the functions to interact with this struct.
 package data
 
 import (
