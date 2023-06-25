@@ -83,18 +83,9 @@ func main() {
 		logLevel:  getEnvWithDefault("LOG_LEVEL", "info"),
 		logFormat: getEnvWithDefault("LOG_FORMAT", "json"),
 	}
-	var json bool
-	if cfg.logFormat == "json" {
-		json = true
-	} else {
-		json = false
-	}
+
 	//structured logs
-	logger := httplog.NewLogger("http", httplog.Options{
-		JSON:     json,
-		LogLevel: cfg.logLevel,
-		Concise:  true,
-	})
+	logger := setupLog(cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -119,4 +110,20 @@ func main() {
 	logger.Info().Msgf("Starting server on port %s", cfg.port)
 	err = srv.ListenAndServe()
 	logger.Fatal().Err(err)
+}
+
+func setupLog(cfg Config) zerolog.Logger {
+	var json bool
+	if cfg.logFormat == "json" {
+		json = true
+	} else {
+		json = false
+	}
+	//structured logs
+	logger := httplog.NewLogger("http", httplog.Options{
+		JSON:     json,
+		LogLevel: cfg.logLevel,
+		Concise:  true,
+	})
+	return logger
 }

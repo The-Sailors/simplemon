@@ -2,53 +2,37 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/The-Sailors/simplemon/internal/data"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/mock"
 )
 
 type Fields struct {
 	config Config
-	logger *log.Logger
+	logger zerolog.Logger
 }
 
 func initFields() Fields {
-	postgresURL := "postgres://postgres:postgres@localhost:5432/simplemon?sslmode=disable"
-	maxOpenConns := 5
-	maxIdleConns := 5
 
+	cfg := Config{
+		env:       "dev",
+		logLevel:  "error",
+		logFormat: "text",
+	}
 	return Fields{
-		config: Config{
-			env:  "dev",
-			port: "8080",
-			dbConfig: struct {
-				postgresURL  string
-				maxOpenConns int
-				maxIdleConns int
-				maxIdleTime  string
-			}{
-				postgresURL:  postgresURL,
-				maxOpenConns: maxOpenConns,
-				maxIdleConns: maxIdleConns,
-			},
-		},
-		logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
+		config: cfg,
+		logger: setupLog(cfg),
 	}
 }
 
 func TestApplication_createMonitorHandler(t *testing.T) {
 
-	type fields struct {
-		config Config
-		logger *log.Logger
-	}
 	type args struct {
 		monitor            *data.Monitor
 		expectedStatusCode int
@@ -60,13 +44,13 @@ func TestApplication_createMonitorHandler(t *testing.T) {
 	}
 	tests := []struct {
 		name   string
-		fields fields
+		fields Fields
 		args   args
 		create CreateReturn // This is the return value of the Create method on the MonitorModelMock
 	}{
 		{
 			name:   "Test createMonitorHandler",
-			fields: fields(initFields()),
+			fields: Fields(initFields()),
 			args: args{
 				monitor: &data.Monitor{
 					URL:              "https://www.google.com",
