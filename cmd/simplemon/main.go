@@ -81,7 +81,7 @@ func main() {
 		env:       getEnvWithDefault("ENV", "development"),
 		port:      getEnvWithDefault("PORT", "8000"),
 		logLevel:  getEnvWithDefault("LOG_LEVEL", "info"),
-		logFormat: getEnvWithDefault("LOG_FORMAT", "json"),
+		logFormat: getEnvWithDefault("LOG_FORMAT", "text"),
 	}
 
 	//structured logs

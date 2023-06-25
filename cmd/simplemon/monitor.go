@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/The-Sailors/simplemon/internal/data"
+	"github.com/go-chi/httplog"
 )
 
 func (app *Application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,27 +16,32 @@ func (app *Application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Request) {
-	app.logger.Info().Msg("Starting Create Monitor Handler")
+	log := httplog.LogEntry(r.Context())
 	var monitor data.Monitor
 
 	err := json.NewDecoder(r.Body).Decode(&monitor)
 	if err != nil {
+		log.Err(err).Msg("Error decoding the request body")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//verify if the primary keys fields user email, type, url and method are not empty
 	if monitor.UserEmail == "" || monitor.MonitorType == "" || monitor.URL == "" || monitor.Method == "" {
+		log.Err(nil).Msg("User email, type, url and method are required")
 		http.Error(w, "User email, type, url and method are required", http.StatusBadRequest)
 		return
 	}
-	createdMonitor, err := app.models.Create(r.Context(), monitor, app.logger)
+	//Create the monitor in the database
+	createdMonitor, err := app.models.Create(r.Context(), monitor, log)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Err(err).Msg("Database err: Error creating the monitor")
+		http.Error(w, "Database err", http.StatusInternalServerError)
 		return
 	}
 	createdMonitorJson, err := json.Marshal(createdMonitor)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Err(err).Msg("Error marshalling the monitor")
+		http.Error(w, "Marshelling Error", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

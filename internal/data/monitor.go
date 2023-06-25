@@ -38,6 +38,7 @@ type MonitorInterface interface {
 }
 
 func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error) {
+	log.Info().Msg("Creating monitor")
 	var id int64
 	err := m.DB.QueryRowContext(ctx, `
 		INSERT INTO monitors (user_email, type, url, method, updated_at, body, headers, parameters, description, frequency_minutes, threshold_minutes)

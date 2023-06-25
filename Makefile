@@ -31,12 +31,21 @@ dev/logs:
 dev/test:
 	@echo "Running tests..."
 
+.PHONY: test
+test:
+	@echo "Running tests..."
+	@go test ./... -cover
 
 #rebuild golang binary
 .PHONY: dev/app
 dev/app:
 	@echo "Building app..."
 	GO_VERSION=$(GO_VERSION) docker api make simplemon
+
+.PHONY: migration/up
+migration/up:
+	@echo "Running migrations..."
+	migrate -path=./migrations -database='postgresql://postgres:postgres@localhost:5432/postgres?sslmode=disable' up
 
 ## Build image service
 .PHONY: image
