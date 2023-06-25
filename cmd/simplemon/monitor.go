@@ -9,12 +9,13 @@ import (
 )
 
 func (app *Application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+	app.logger.Info().Msg("Starting Healthcheck Handler")
 	fmt.Fprintln(w, "Jojo: is awesome!")
 	fmt.Fprintln(w, "environment:", app.config.env)
 }
 
 func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Request) {
-	app.logger.Println("Starting Create Monitor Handler")
+	app.logger.Info().Msg("Starting Create Monitor Handler")
 	var monitor data.Monitor
 
 	err := json.NewDecoder(r.Body).Decode(&monitor)
@@ -27,20 +28,19 @@ func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "User email, type, url and method are required", http.StatusBadRequest)
 		return
 	}
-	createdMonitor, err := app.models.Monitor.Create(r.Context(), monitor, app.logger)
+	createdMonitor, err := app.models.Create(r.Context(), monitor, app.logger)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	monitorJson, err := json.Marshal(createdMonitor)
+	createdMonitorJson, err := json.Marshal(createdMonitor)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(monitorJson)
-
+	w.Write(createdMonitorJson)
 }
 
 // func (app *Application) getMonitorHandler(w http.ResponseWriter, r *http.Request) {

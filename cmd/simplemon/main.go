@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/The-Sailors/simplemon/internal/data"
+	"github.com/go-chi/httplog"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 )
 
 type Config struct {
@@ -49,9 +50,9 @@ func openDB(cfg Config, ctx context.Context) (*sql.DB, error) {
 }
 
 type Application struct {
-	config Config      // All the configuration for the application
-	logger *log.Logger // Generic logger for the application
-	models data.Models // Models wraps all the application models.
+	config Config                // All the configuration for the application
+	logger zerolog.Logger        // Generic logger for the application
+	models data.MonitorInterface // Models wraps all the application models.
 }
 
 func getEnvWithDefault(key, defaultValue string) string {
@@ -78,21 +79,27 @@ func main() {
 		env:  getEnvWithDefault("ENV", "development"),
 		port: getEnvWithDefault("PORT", "8000"),
 	}
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	// logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+
+	//structured logs
+	logger := httplog.NewLogger("http", httplog.Options{
+		JSON:     true,
+		LogLevel: "info",
+		Concise:  true,
+	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	db, err := openDB(cfg, ctx)
 
 	if err != nil {
-		logger.Println("Cannot connect to database")
-		logger.Fatal(err)
+		logger.Err(err).Msg("Cannot connect to database")
+		logger.Fatal()
 	}
-
 	app := &Application{
 		config: cfg,
 		logger: logger,
-		models: data.NewModels(db),
+		models: data.NewMonitorModel(db),
 	}
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.port),
@@ -101,7 +108,7 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-	logger.Printf("Starting server on %s", srv.Addr)
+	logger.Info().Msgf("Starting server on port %s", cfg.port)
 	err = srv.ListenAndServe()
-	logger.Fatal(err)
+	logger.Fatal().Err(err)
 }

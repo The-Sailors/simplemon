@@ -7,11 +7,30 @@ package data
 import "database/sql"
 
 type Models struct {
-	Monitor MonitorModel
+	Monitor *MonitorModel
 }
 
+type ModelsInterface interface {
+	NewMonitorModel(db *sql.DB) *MonitorModel
+}
+
+
 func NewModels(db *sql.DB) Models {
+
 	return Models{
-		Monitor: MonitorModel{DB: db},
+		Monitor: NewMonitorModel(db),
+	}
+}
+
+//TODO: Find a better place for this implementation
+// Mock version of the models
+
+type MockModels struct {
+	Monitor *MonitorModelMock
+}
+
+func NewMockModels() MockModels {
+	return MockModels{
+		Monitor: NewMonitorModelMock(),
 	}
 }

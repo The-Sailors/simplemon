@@ -1,0 +1,94 @@
+openapi: 3.0.0
+info:
+  title: Simple mon API
+  version: "1.0.1"
+  description: Simple mon API
+paths:
+  /v1/monitors:
+    post:
+      summary: Create a monitor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitorRequest"
+      responses:
+        "201":
+          description: Monitor Object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitorResponse"
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+  /v1/healthcheck:
+    get:
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+components:
+  schemas:
+    MonitorRequest:
+      type: object
+      properties:
+        user_email:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        method:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        body:
+          type: string
+        headers:
+          type: string
+        parameters:
+          type: string
+        description:
+          type: string
+        frequency_minutes:
+          type: integer
+          format: int64
+        threshold_minutes:
+          type: integer
+          format: int64
+    MonitorResponse:
+      type: object
+      properties:
+        monitor_id:
+          type: integer
+          format: int64
+        user_email:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        method:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        body:
+          type: string
+        headers:
+          type: string
+        parameters:
+          type: string
+        description:
+          type: string
+        frequency_minutes:
+          type: integer
+          format: int64
+        threshold_minutes:
+          type: integer
+          format: int64

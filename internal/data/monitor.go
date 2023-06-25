@@ -5,8 +5,9 @@ package data
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type Monitor struct {
@@ -28,11 +29,15 @@ type MonitorModel struct {
 	DB *sql.DB
 }
 
-type MonitorRepository interface {
-	Create(ctx context.Context, monitor Monitor, log *log.Logger) error
+func NewMonitorModel(db *sql.DB) *MonitorModel {
+	return &MonitorModel{DB: db}
 }
 
-func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log *log.Logger) (*Monitor, error) {
+type MonitorInterface interface {
+	Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error)
+}
+
+func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error) {
 	var id int64
 	err := m.DB.QueryRowContext(ctx, `
 		INSERT INTO monitors (user_email, type, url, method, updated_at, body, headers, parameters, description, frequency_minutes, threshold_minutes)
@@ -40,7 +45,6 @@ func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log *log.Log
 		RETURNING monitor_id`,
 		monitor.UserEmail, monitor.MonitorType, monitor.URL, monitor.Method, monitor.UpdatedAt, monitor.Body, monitor.Headers, monitor.Parameters, monitor.Description, monitor.FrequencyMinutes, monitor.ThresholdMinutes).Scan(&id)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	monitor.MonitorID = id
