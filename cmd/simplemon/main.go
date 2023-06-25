@@ -23,6 +23,8 @@ type Config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	logLevel  string
+	logFormat string
 }
 
 func openDB(cfg Config, ctx context.Context) (*sql.DB, error) {
@@ -76,15 +78,21 @@ func main() {
 			maxIdleConns: 5,
 			maxIdleTime:  "15m",
 		},
-		env:  getEnvWithDefault("ENV", "development"),
-		port: getEnvWithDefault("PORT", "8000"),
+		env:       getEnvWithDefault("ENV", "development"),
+		port:      getEnvWithDefault("PORT", "8000"),
+		logLevel:  getEnvWithDefault("LOG_LEVEL", "info"),
+		logFormat: getEnvWithDefault("LOG_FORMAT", "json"),
 	}
-	// logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-
+	var json bool
+	if cfg.logFormat == "json" {
+		json = true
+	} else {
+		json = false
+	}
 	//structured logs
 	logger := httplog.NewLogger("http", httplog.Options{
-		JSON:     true,
-		LogLevel: "info",
+		JSON:     json,
+		LogLevel: cfg.logLevel,
 		Concise:  true,
 	})
 
