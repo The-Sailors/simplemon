@@ -21,6 +21,12 @@ dev/stop:
 	@echo "Stopping development server..."
 	@docker-compose down
 
+## Restart API container
+.PHONY:dev/restart
+dev/restart:
+	@echo "Restarting development server..."
+	@docker-compose restart api
+
 .PHONY: dev/logs
 dev/logs:
 	@echo "Showing logs..."

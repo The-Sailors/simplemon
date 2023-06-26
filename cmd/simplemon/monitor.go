@@ -34,7 +34,9 @@ func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Requ
 	//Create the monitor in the database
 	createdMonitor, err := app.models.Create(r.Context(), monitor, log)
 	if err != nil {
-		log.Err(err).Msg("Database err: Error creating the monitor")
+		log.Err(err).Msg("Error creating the monitor")
+		//verify if the error is a unique constraint violation
+
 		http.Error(w, "Database err", http.StatusInternalServerError)
 		return
 	}

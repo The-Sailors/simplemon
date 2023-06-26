@@ -5,8 +5,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/rs/zerolog"
 )
 
@@ -35,19 +37,47 @@ func NewMonitorModel(db *sql.DB) *MonitorModel {
 
 type MonitorInterface interface {
 	Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error)
+	GetById(ctx context.Context, id int64, log zerolog.Logger) (*Monitor, error)
 }
+
+var ErrUniqueConstraintViolation = errors.New("unique constraint violation")
 
 func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error) {
 	log.Info().Msg("Creating monitor")
 	var id int64
+	var psqlErr *pq.Error
+
 	err := m.DB.QueryRowContext(ctx, `
 		INSERT INTO monitors (user_email, type, url, method, updated_at, body, headers, parameters, description, frequency_minutes, threshold_minutes)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,  $11)
 		RETURNING monitor_id`,
 		monitor.UserEmail, monitor.MonitorType, monitor.URL, monitor.Method, monitor.UpdatedAt, monitor.Body, monitor.Headers, monitor.Parameters, monitor.Description, monitor.FrequencyMinutes, monitor.ThresholdMinutes).Scan(&id)
 	if err != nil {
-		return nil, err
+		log.Err(err).Msg("Error creating monitor")
+		//if erro is pq: duplicate key value violates unique constraint "monitors_pkey"
+		//then return a custom error
+		if errors.As(err, &psqlErr) && psqlErr.Code == "23505" { // 23505 is unique_violation
+			return nil, ErrUniqueConstraintViolation
+		} else {
+
+			return nil, err
+		}
 	}
 	monitor.MonitorID = id
+	return &monitor, nil
+}
+
+func (m *MonitorModel) GetById(ctx context.Context, id int64, log zerolog.Logger) (*Monitor, error) {
+	log.Info().Msg("Getting monitor by id")
+	var monitor Monitor
+	err := m.DB.QueryRowContext(ctx, `
+		SELECT monitor_id, user_email, type, url, method, updated_at, body, headers, parameters, description, frequency_minutes, threshold_minutes
+		FROM monitors
+		WHERE monitor_id = $1`,
+		id).Scan(&monitor.MonitorID, &monitor.UserEmail, &monitor.MonitorType, &monitor.URL, &monitor.Method, &monitor.UpdatedAt, &monitor.Body, &monitor.Headers, &monitor.Parameters, &monitor.Description, &monitor.FrequencyMinutes, &monitor.ThresholdMinutes)
+	if err != nil {
+		log.Err(err).Msg("Error getting monitor by id")
+		return nil, err
+	}
 	return &monitor, nil
 }
