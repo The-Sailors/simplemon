@@ -39,12 +39,39 @@ type MonitorInterface interface {
 	Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error)
 	GetById(ctx context.Context, id int64, log zerolog.Logger) (*Monitor, error)
 	Delete(ctx context.Context, id int64, log zerolog.Logger) error
+	GetAll(ctx context.Context, log zerolog.Logger) ([]Monitor, error)
 }
 
 var (
 	ErrUniqueConstraintViolation = errors.New("unique constraint violation")
 	ErrMonitorNotFound           = errors.New("monitor not found")
 )
+
+func (m *MonitorModel) GetAll(ctx context.Context, log zerolog.Logger) ([]Monitor, error) {
+	log.Info().Msg("Getting all monitors")
+	rows, err := m.DB.QueryContext(ctx, `
+		SELECT monitor_id, user_email, type, url, method, updated_at, body, headers, parameters, description, frequency_minutes, threshold_minutes
+		FROM monitors`)
+	if err != nil {
+		log.Err(err).Msg("Error getting all monitors")
+		return nil, err
+	}
+	defer rows.Close()
+
+	monitors := []Monitor{}
+
+	for rows.Next() {
+		var monitor Monitor
+		err := rows.Scan(&monitor.MonitorID, &monitor.UserEmail, &monitor.MonitorType, &monitor.URL, &monitor.Method, &monitor.UpdatedAt, &monitor.Body, &monitor.Headers, &monitor.Parameters, &monitor.Description, &monitor.FrequencyMinutes, &monitor.ThresholdMinutes)
+		if err != nil {
+			log.Err(err).Msg("Error scanning rows")
+			return nil, err
+		}
+		monitors = append(monitors, monitor)
+	}
+
+	return monitors, nil
+}
 
 func (m *MonitorModel) Delete(ctx context.Context, id int64, log zerolog.Logger) error {
 	log.Info().Msg("Deleting monitor")

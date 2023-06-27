@@ -12,11 +12,15 @@ func (app *Application) routes() http.Handler {
 	httpLogMiddleware := httplog.RequestLogger(app.logger)
 
 	router := httprouter.New()
-
-	router.HandlerFunc(http.MethodPost, "/v1/monitors", addMiddleware(app.createMonitorHandler, httpLogMiddleware))
+	//healthcheck route
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", addMiddleware(app.healthcheckHandler, httpLogMiddleware))
+	//monitor routes
+	router.HandlerFunc(http.MethodPost, "/v1/monitors", addMiddleware(app.createMonitorHandler, httpLogMiddleware))
 	router.HandlerFunc(http.MethodGet, "/v1/monitors/:id", addMiddleware(app.getMonitorHandler, httpLogMiddleware))
 	router.HandlerFunc(http.MethodDelete, "/v1/monitors/:id", addMiddleware(app.deleteMonitorHandler, httpLogMiddleware))
+	router.HandlerFunc(http.MethodGet, "/v1/monitors", addMiddleware(app.getAllMonitorsHandler, httpLogMiddleware))
+
+	//swagger routes
 	opts := middleware.SwaggerUIOpts{SpecURL: "openapi.yaml"}
 	sh := middleware.SwaggerUI(opts, nil)
 	router.Handler(http.MethodGet, "/docs", sh)

@@ -20,6 +20,12 @@ type MockMonitorInterface interface {
 	Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error)
 	GetById(ctx context.Context, id int64, log zerolog.Logger) (*Monitor, error)
 	Delete(ctx context.Context, id int64, log zerolog.Logger) error
+	GetAll(ctx context.Context, log zerolog.Logger) ([]Monitor, error)
+}
+
+func (m *MonitorModelMock) GetAll(ctx context.Context, log zerolog.Logger) ([]Monitor, error) {
+	args := m.Called(ctx, log)
+	return args.Get(0).([]Monitor), args.Error(1)
 }
 
 func (m *MonitorModelMock) Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error) {

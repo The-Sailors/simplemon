@@ -5,7 +5,24 @@ info:
   description: Simple mon API
 paths:
   /v1/monitors:
+    get:
+      tags:
+        - "monitors"
+      summary: Get all monitors
+      responses:
+        "200":
+          description: Monitor Object
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonitorResponse"
+        "500":
+          description: Internal Server Error
     post:
+      tags:
+        - "monitors"
       summary: Create a monitor
       requestBody:
         content:
@@ -27,6 +44,8 @@ paths:
           description: Conflict - Monitor already exists
   /v1/monitors/{id}:
     delete:
+      tags:
+        - "monitors"
       summary: Delete a monitor
       parameters:
         - name: id
@@ -45,6 +64,8 @@ paths:
         "404":
           description: Not Found - Monitor not found
     get:
+      tags:
+        - "monitors"
       summary: Get a monitor
       parameters:
         - name: id
