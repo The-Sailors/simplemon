@@ -20,9 +20,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/MonitorResponse"
         "400":
-          description: Bad Request
+          description: Bad Request - Some key field was not provided
         "500":
           description: Internal Server Error
+        "409":
+          description: Conflict - Monitor already exists
+  /v1/monitors/{id}:
+    delete:
+      summary: Delete a monitor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request - Some key field was not provided
+        "500":
+          description: Internal Server Error
+        "404":
+          description: Not Found - Monitor not found
+    get:
+      summary: Get a monitor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Monitor Object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitorResponse"
+        "400":
+          description: Bad Request - Some key field was not provided
+        "500":
+          description: Internal Server Error
+        "404":
+          description: Not Found - Monitor not found
+
   /v1/healthcheck:
     get:
       summary: Healthcheck

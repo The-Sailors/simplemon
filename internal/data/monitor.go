@@ -38,9 +38,27 @@ func NewMonitorModel(db *sql.DB) *MonitorModel {
 type MonitorInterface interface {
 	Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error)
 	GetById(ctx context.Context, id int64, log zerolog.Logger) (*Monitor, error)
+	Delete(ctx context.Context, id int64, log zerolog.Logger) error
 }
 
-var ErrUniqueConstraintViolation = errors.New("unique constraint violation")
+var (
+	ErrUniqueConstraintViolation = errors.New("unique constraint violation")
+	ErrMonitorNotFound           = errors.New("monitor not found")
+)
+
+func (m *MonitorModel) Delete(ctx context.Context, id int64, log zerolog.Logger) error {
+	log.Info().Msg("Deleting monitor")
+	_, err := m.DB.ExecContext(ctx, `
+		DELETE FROM monitors
+		WHERE monitor_id = $1`,
+		id)
+	if err != nil {
+		log.Err(err).Msg("Error deleting monitor")
+		return err
+	}
+	return nil
+
+}
 
 func (m *MonitorModel) Create(ctx context.Context, monitor Monitor, log zerolog.Logger) (*Monitor, error) {
 	log.Info().Msg("Creating monitor")
@@ -76,8 +94,14 @@ func (m *MonitorModel) GetById(ctx context.Context, id int64, log zerolog.Logger
 		WHERE monitor_id = $1`,
 		id).Scan(&monitor.MonitorID, &monitor.UserEmail, &monitor.MonitorType, &monitor.URL, &monitor.Method, &monitor.UpdatedAt, &monitor.Body, &monitor.Headers, &monitor.Parameters, &monitor.Description, &monitor.FrequencyMinutes, &monitor.ThresholdMinutes)
 	if err != nil {
-		log.Err(err).Msg("Error getting monitor by id")
-		return nil, err
+		//verify if the error is pq: no rows in result set
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrMonitorNotFound
+		} else {
+			log.Err(err).Msg("Error getting monitor by id")
+			return nil, err
+		}
+
 	}
 	return &monitor, nil
 }

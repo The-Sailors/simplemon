@@ -15,6 +15,8 @@ func (app *Application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/monitors", addMiddleware(app.createMonitorHandler, httpLogMiddleware))
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", addMiddleware(app.healthcheckHandler, httpLogMiddleware))
+	router.HandlerFunc(http.MethodGet, "/v1/monitors/:id", addMiddleware(app.getMonitorHandler, httpLogMiddleware))
+	router.HandlerFunc(http.MethodDelete, "/v1/monitors/:id", addMiddleware(app.deleteMonitorHandler, httpLogMiddleware))
 	opts := middleware.SwaggerUIOpts{SpecURL: "openapi.yaml"}
 	sh := middleware.SwaggerUI(opts, nil)
 	router.Handler(http.MethodGet, "/docs", sh)
