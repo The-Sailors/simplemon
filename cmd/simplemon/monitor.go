@@ -17,6 +17,28 @@ func (app *Application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintln(w, "environment:", app.config.env)
 }
 
+func (app *Application) getAllMonitorsHandler(w http.ResponseWriter, r *http.Request) {
+	log := httplog.LogEntry(r.Context())
+	log.Info().Msg("Starting Get All Handler")
+	//Get all the monitors from the database
+	monitors, err := app.models.GetAll(r.Context(), log)
+	if err != nil {
+		log.Err(err).Msg("Error getting all the monitors")
+		http.Error(w, "Error getting all the monitors", http.StatusInternalServerError)
+		return
+	}
+	//Write the response
+	monitorsJson, err := json.Marshal(monitors)
+	if err != nil {
+		log.Err(err).Msg("Error marshalling the monitor")
+		http.Error(w, "Marshelling Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(monitorsJson)
+}
+
 func (app *Application) deleteMonitorHandler(w http.ResponseWriter, r *http.Request) {
 	log := httplog.LogEntry(r.Context())
 	log.Info().Msg("Starting Delete Handler")

@@ -288,7 +288,6 @@ func TestApplication_getMonitorHandler(t *testing.T) {
 			// handler := http.HandlerFunc(app.getMonitorHandler)
 			// handler.ServeHTTP(w, req)
 			if w.Code != tt.args.expectedStatusCode {
-				t.Error(w.Body.String())
 				t.Errorf("Expected status code %v, got %v", tt.args.expectedStatusCode, w.Code)
 			}
 
@@ -403,11 +402,98 @@ func TestApplication_deleteMonitorHandler(t *testing.T) {
 			router.ServeHTTP(w, req)
 
 			if w.Code != tt.args.expectedStatusCode {
-				t.Error(w.Body.String())
 				t.Errorf("Expected status code %v, got %v", tt.args.expectedStatusCode, w.Code)
 			}
 
 		})
 	}
 
+}
+
+func TestApplication_getAllMonitorsHandler(t *testing.T) {
+	type args struct {
+		expectedStatusCode int
+		method             string
+	}
+	type GetAllReturn struct {
+		monitors []data.Monitor
+		err      error
+	}
+	tests := []struct {
+		name   string
+		fields Fields
+		args   args
+		getAll GetAllReturn
+	}{
+		{
+			name:   "Test getAllMonitorsHandler success",
+			fields: Fields(initFields()),
+			args: args{
+				expectedStatusCode: 200,
+				method:             "GET",
+			},
+			getAll: GetAllReturn{
+				monitors: []data.Monitor{
+					{
+						MonitorID:   1,
+						URL:         "https://www.google.com",
+						UserEmail:   "jojo@gmail.com",
+						MonitorType: "jojo",
+						Method:      "GET",
+						UpdatedAt:   time.Now(),
+						Body:        "",
+						Headers:     "",
+						Parameters:  "",
+						Description: "",
+					},
+					{
+						MonitorID:   2,
+						URL:         "https://www.google.com",
+						UserEmail:   "lobosque@gmail.com",
+						MonitorType: "lobosque",
+						Method:      "GET",
+						UpdatedAt:   time.Now(),
+						Body:        "",
+						Headers:     "",
+						Parameters:  "",
+						Description: "",
+					},
+				},
+				err: nil,
+			},
+		},
+		{
+			name:   "Test getAllMonitorsHandler database generic error",
+			fields: Fields(initFields()),
+			args: args{
+				expectedStatusCode: 500,
+				method:             "GET",
+			},
+			getAll: GetAllReturn{
+				monitors: nil,
+				err:      errors.New("database generic error"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testObj := data.NewMonitorModelMock()
+			testObj.On("GetAll", mock.Anything, mock.Anything).Return(tt.getAll.monitors, tt.getAll.err)
+			app := &Application{
+				config: tt.fields.config,
+				logger: tt.fields.logger,
+				models: testObj,
+			}
+			//How to test query params: https://stackoverflow.com/questions/43502432/how-to-write-test-with-httprouter
+
+			req := httptest.NewRequest(tt.args.method, "/v1/monitors", nil)
+			w := httptest.NewRecorder()
+			handler := http.HandlerFunc(app.getAllMonitorsHandler)
+			handler.ServeHTTP(w, req)
+			if w.Code != tt.args.expectedStatusCode {
+				t.Errorf("Expected status code %v, got %v", tt.args.expectedStatusCode, w.Code)
+			}
+
+		})
+	}
 }
