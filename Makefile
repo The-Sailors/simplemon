@@ -40,7 +40,7 @@ dev/test:
 .PHONY: test
 test:
 	@echo "Running tests..."
-	@go test ./... -cover
+	@go test ./... -cover -v
 
 #rebuild golang binary
 .PHONY: dev/app

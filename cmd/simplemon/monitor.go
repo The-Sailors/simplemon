@@ -4,15 +4,58 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/The-Sailors/simplemon/internal/data"
 	"github.com/go-chi/httplog"
+	"github.com/julienschmidt/httprouter"
 )
 
 func (app *Application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	app.logger.Info().Msg("Starting Healthcheck Handler")
 	fmt.Fprintln(w, "Jojo: is awesome!")
 	fmt.Fprintln(w, "environment:", app.config.env)
+}
+
+func (app *Application) deleteMonitorHandler(w http.ResponseWriter, r *http.Request) {
+	log := httplog.LogEntry(r.Context())
+	log.Info().Msg("Starting Delete Handler")
+	//get the id from the url
+	monitorID := httprouter.ParamsFromContext(r.Context()).ByName("id")
+	if monitorID == "" {
+		log.Err(nil).Msg("Monitor id is required")
+		http.Error(w, "Monitor id is required", http.StatusBadRequest)
+		return
+	}
+	//convert the id to int
+	monitorIDInt, err := strconv.Atoi(monitorID)
+	if err != nil {
+		log.Err(err).Msg("Error converting id to int")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	//Verify if the monitor exists
+	_, err = app.models.GetById(r.Context(), int64(monitorIDInt), log)
+	if err != nil {
+		if err.Error() == data.ErrMonitorNotFound.Error() {
+			log.Warn().Msg("Monitor not found")
+			http.Error(w, "Was not possible to delete the monitor because it not exists", http.StatusNotFound)
+			return
+		} else {
+			log.Err(err).Msg("Error getting the monitor")
+			http.Error(w, "Error getting the monitor", http.StatusInternalServerError)
+			return
+		}
+	}
+	//Delete the monitor
+	err = app.models.Delete(r.Context(), int64(monitorIDInt), log)
+	if err != nil {
+		log.Err(err).Msg("Error deleting the monitor")
+		http.Error(w, "Error deleting the monitor", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,10 +77,16 @@ func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Requ
 	//Create the monitor in the database
 	createdMonitor, err := app.models.Create(r.Context(), monitor, log)
 	if err != nil {
-		log.Err(err).Msg("Error creating the monitor")
-		//verify if the error is a unique constraint violation
 
-		http.Error(w, "Database err", http.StatusInternalServerError)
+		//verify if the error is a unique constraint violation
+		if err.Error() == data.ErrUniqueConstraintViolation.Error() {
+			log.Warn().Msg("Monitor already exists")
+			http.Error(w, "Monitor already exists", http.StatusConflict)
+			return
+		} else {
+			log.Err(err).Msg("Error creating the monitor")
+			http.Error(w, "Error creating the monitor", http.StatusInternalServerError)
+		}
 		return
 	}
 	createdMonitorJson, err := json.Marshal(createdMonitor)
@@ -51,9 +100,51 @@ func (app *Application) createMonitorHandler(w http.ResponseWriter, r *http.Requ
 	w.Write(createdMonitorJson)
 }
 
-// func (app *Application) getMonitorHandler(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprintln(w, "Get Monitor")
-// }
+func (app *Application) getMonitorHandler(w http.ResponseWriter, r *http.Request) {
+	log := httplog.LogEntry(r.Context())
+	log.Info().Msg("Starting Get Monitor Handler")
+	params := httprouter.ParamsFromContext(r.Context())
+
+	monitorID := params.ByName("id")
+
+	if monitorID == "" {
+		log.Err(nil).Msg("Monitor id is required")
+		http.Error(w, "Monitor id is required", http.StatusBadRequest)
+		return
+	}
+	//convert string to int64
+	monitorIDInt, err := strconv.Atoi(monitorID)
+	if err != nil {
+		log.Err(err).Msgf("Error converting the monitor id: %s to int", monitorID)
+
+		http.Error(w, "Invalid integer parameters", http.StatusBadRequest)
+		return
+	}
+
+	//Get the monitor from the database
+	monitor, err := app.models.GetById(r.Context(), int64(monitorIDInt), log)
+	if err != nil {
+		if err.Error() == data.ErrMonitorNotFound.Error() {
+			log.Warn().Msg("Monitor not found")
+			http.Error(w, "Monitor not found", http.StatusNotFound)
+			return
+		} else {
+
+			log.Err(err).Msg("Error getting the monitor")
+			http.Error(w, "Error getting the monitor", http.StatusInternalServerError)
+			return
+		}
+	}
+	monitorJson, err := json.Marshal(monitor)
+	if err != nil {
+		log.Err(err).Msg("Error marshalling the monitor")
+		http.Error(w, "Marshelling Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(monitorJson)
+}
 
 // func (app *Application) updateMonitorHandler(w http.ResponseWriter, r *http.Request) {
 // 	fmt.Fprintln(w, "Update Monitor")

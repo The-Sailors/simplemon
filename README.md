@@ -23,7 +23,7 @@ But the most useful for a development environment are:
 
 Have you changed some parts of the code and want to **rerun the application?** Just type `make dev/restart`, the API container will be restarted and our changes will be shipped!
 
-How to see the logs that are running into container?
+How to see the logs that are running into the container?
 Simple like type: `make dev/logs`
 
 Finish the day? `make dev/stop`
